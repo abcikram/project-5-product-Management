@@ -1,49 +1,41 @@
 const productModel = require("../models/productModel");
 const { uploadFile } = require("../controller/awsController");
 
-const {
-  isValidBody,
-  isValidObjectId,
-  isValidPrice,
-  isValidSize,
-  isValid,
-} = require("../validator/validate");
+const {isValidBody,isValidObjectId,isValidPrice,isValidSize,isValid} = require("../validator/validate");
 
-//_______________________create product__________________________//
+
+//___________________________________create product__________________________________________//
 
 const createProduct = async function (req, res) {
   try {
     let requestBody = req.body;
+    
     if (!isValidBody(requestBody)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Request body can not be empty" });
+      return res.status(400).send({ status: false, message: "Request body can not be empty" });
     }
-    let files = req.files;
 
-    if (files && files.length > 0) {
+    let files = req.files;
+    // console.log(files)
+
+    if (files && files.length > 0)
+    {
       //upload to s3 and get the uploaded link
       // res.send the link back to frontend/postman
-
       let validImage = files[0].mimetype.split("/");
       if (validImage[0] != "image") {
-        return res
-          .status(400)
-          .send({ status: false, message: "Please Provide Valid Image.." });
+        return res.status(400).send({ status: false, message: "Please Provide Valid Image.." });
       }
+
       let imageUrl = await uploadFile(files[0]);
       requestBody.productImage = imageUrl;
     }
+
     if (files.length == 0) {
-      return res
-        .status(400)
-        .send({ status: false, message: "please provide valid product image" });
+      return res.status(400).send({ status: false, message: "please provide valid product image" });
     }
 
     if (!isValidBody(requestBody)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Enter some data " });
+      return res.status(400).send({ status: false, message: "Enter some data " });
     }
 
     let {
@@ -58,62 +50,37 @@ const createProduct = async function (req, res) {
     } = requestBody;
 
     if (!title) {
-      return res.status(400).send({
-        status: false,
-        message: "Please enter title ,this is required ",
-      });
+      return res.status(400).send({status: false,message: "Please enter title ,this is required"});
     }
 
-    let findTitle = await productModel.findOne({
-      title: title,
-      isDeleted: false,
-    });
+    let findTitle = await productModel.findOne({title: title,isDeleted: false});
     if (findTitle) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Title already exist" });
+      return res.status(400).send({ status: false, message: "Title already exist" });
     }
 
     if (!description) {
-      return res.status(400).send({
-        status: false,
-        message: "Please enter discription ,this is required ",
-      });
+      return res.status(400).send({status: false,message: "Please enter discription ,this is required"});
     }
 
     if (!price) {
-      return res.status(400).send({
-        status: false,
-        message: "Please enter price ,this is required ",
-      });
+      return res.status(400).send({status: false,message: "Please enter price ,this is required "});
     }
 
     if (!isValidPrice(price)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Enter valid price" });
+      return res.status(400).send({ status: false, message: "Enter valid price" });
     }
 
     if (!currencyId) {
-      return res.status(400).send({
-        status: false,
-        message: "Please enter currency Id,this is required ",
-      });
+      return res.status(400).send({status: false,message: "Please enter currency Id,this is required "});
     }
 
     if (currencyId != "INR" && currencyId != "USD") {
-      return res.status(400).send({
-        status: false,
-        message: " please enter currencyId in valid format",
-      });
+      return res.status(400).send({status: false,message: " please enter currencyId in valid format"});
     }
 
     if (isFreeShipping) {
       if (isFreeShipping !== "true" && isFreeShipping !== "false") {
-        return res.status(400).send({
-          status: false,
-          message: "isFreeShipping must be a boolean value",
-        });
+        return res.status(400).send({status: false,message: "isFreeShipping must be a boolean value"});
       }
     }
 
@@ -122,40 +89,44 @@ const createProduct = async function (req, res) {
     }
 
     if (!currencyFormat) {
-      requestBody.currencyFormat = "₹";
+          requestBody.currencyFormat = "₹";
     }
+
     if (currencyFormat) {
       if (currencyFormat !== "₹") {
-        return res.status(400).send({
-          status: false,
-          message: " please enter valid  currencyformat",
-        });
+        return res.status(400).send({status: false,message: " please enter valid  currencyformat"});
       }
     }
 
     if (!availableSizes) {
-      return res
-        .status(400)
-        .send({ status: false, message: " please enter at least one size" });
+      return res.status(400).send({ status: false, message: " please enter at least one size" });
     }
 
+    // validate for size :-
     let sizes = ["S", "XS", "M", "X", "L", "XXL", "XL"];
     availableSizes = availableSizes.split(",");
     for (let i = 0; i < availableSizes.length; i++) {
       if (!sizes.includes(availableSizes[i])) {
         return res.status(400).send({
           status: false,
-          message: "availableSizes must be -[S, XS, M, X, L, XXL, XL]",
+          message: "availableSizes must be :-[S, XS, M, X, L, XXL, XL]",
         });
       }
     }
 
-    if (!Number(installments)) {
-      return res
+    if(installments){
+
+      if (!Number(installments)) {
+        return res
         .status(400)
         .send({ status: false, message: "installment must be a number" });
+     }
+     if(installments < 0){
+      return res.status(400).send({status:false,message:"Installment not be less than zero"})
+     }
+    
     }
-
+  
     requestBody.availableSizes = availableSizes;
     let Product = await productModel.create(requestBody);
     return res
@@ -166,7 +137,7 @@ const createProduct = async function (req, res) {
   }
 };
 
-//_______________________get product__________________________//
+//_________________________________________get product_____________________________________________//
 
 const getProduct = async (req, res) => {
   try {
@@ -178,7 +149,7 @@ const getProduct = async (req, res) => {
     filter.isDeleted = false;
 
     if (name) {
-      filter.title = { $regex: name, $options: "i" };
+      filter.title = { $regex: name, $options: "i" };   // $options:"i" means insansitibe 
     }
 
     if (size) {
@@ -188,6 +159,15 @@ const getProduct = async (req, res) => {
           .send({ status: false, message: "Please provide valid size" });
       }
       filter.availableSizes = size;
+    }
+    
+    if (priceLessThan) {
+      if (!isValidPrice(priceLessThan)) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Please provide valid price" });
+      }
+      filter.price = { $lt: priceLessThan };
     }
 
     if (priceGreaterThan) {
@@ -200,23 +180,14 @@ const getProduct = async (req, res) => {
     }
 
     if (priceGreaterThan && priceLessThan) {
-      if(!isValidPrice(priceGreaterThan && priceLessThan)){
-        return res.status(400).send({status:false, message:"Please provide valid price"})
+      if (!isValidPrice(priceGreaterThan && priceLessThan)) {
+        return res.status(400).send({ status: false, message: "Please provide valid price" })
       }
       filter.price = {
         $gt: Number(priceGreaterThan),
         $lt: Number(priceLessThan),
       };
     }
-    if (priceLessThan) {
-      if (!isValidPrice(priceLessThan)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "Please provide valid price" });
-      }
-      filter.price = { $lt: priceLessThan };
-    }
-
    
 
     if (priceSort) {
@@ -228,25 +199,24 @@ const getProduct = async (req, res) => {
       }
     }
 
-    let sortAllValue = await productModel
-    .find(filter)
-    .sort({ price: priceSort });
+    let sortAllValue = await productModel.find(filter).sort({ price: priceSort });
 
-    if(sortAllValue.length==0){
-    return res
+    if (sortAllValue.length == 0) {
+      return res
         .status(404)
         .send({ status: false, message: "No Product found" });
     }
 
-    res
-      .status(200)
-      .send({ status: true, message: "Success", data: sortAllValue });
+    res.status(200).send({ status: true, message: "Success", data: sortAllValue });
+
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
   }
 };
 
-//_____________________get product details by params____________________//
+
+//_______________________________________Get product details by params______________________________________//
+
 
 const getProductById = async function (req, res) {
   try {
@@ -269,42 +239,44 @@ const getProductById = async function (req, res) {
         .send({ status: false, message: "Product Not Found..." });
     }
 
-    return res
-      .status(200)
-      .send({ status: true, message: "Success", data: product });
+    return res.status(200).send({ status: true, message: "Success", data: product });
   } catch (error) {
     res.status(500).send({ error: error.message });
   }
 };
 
-//________________________update product______________________//
+//____________________________________________ Update product _____________________________________________//
 
 const updateProduct = async function (req, res) {
   try {
     let productId = req.params.productId;
     let files = req.files;
     let requestBody = req.body;
-    if (!isValidBody(requestBody)&&files.length==0) {
+    if (!isValidBody(requestBody)){
       return res
         .status(400)
         .send({ status: false, message: "Please enter some data to update" });
     }
+
+    if(files.length == 0){
+      return res.status(400).send({status:false,message:"please upload files"})
+    }
+
     if (!isValidObjectId(productId)) {
       return res
         .status(400)
         .send({ status: false, message: " product id invalid" });
     }
-    let findProduct = await productModel.findOne({
-      _id: productId,
-      isDeleted: false,
-    });
+
+    let findProduct = await productModel.findOne({_id: productId,isDeleted: false});
+
     if (!findProduct) {
       return res
         .status(404)
         .send({ status: false, message: " product not found" });
     }
 
-    if (!isValidBody(requestBody) && files.length == 0) {
+    if (!isValidBody(requestBody)) {
       return res
         .status(400)
         .send({ status: false, message: "Enter some data for update " });
@@ -368,7 +340,11 @@ const updateProduct = async function (req, res) {
           .status(400)
           .send({ status: false, message: "installment must be a number" });
       }
+      if (installments < 0){
+          return res.status(400).send({status:false,message:"Installment not be less than zero"})
+      }
     }
+
 
     if (files.length > 0) {
       //upload to s3 and get the uploaded link
@@ -384,13 +360,13 @@ const updateProduct = async function (req, res) {
     );
     return res
       .status(200)
-      .send({ status: true, message: "update successful", data: updatingData });
+      .send({ status: true, message: "The product update successfully", data: updatingData });
   } catch (error) {
     res.status(500).send({ status: false, message: error.message });
   }
 };
 
-//________________________delete product_______________________//
+//_________________________________________ Delete product ______________________________________________________//
 
 const deleteProductById = async function (req, res) {
   try {
@@ -420,16 +396,13 @@ const deleteProductById = async function (req, res) {
 
     return res
       .status(200)
-      .send({ status: true, message: "Product successfully deleted" });
+      .send({ status: true, message: "Product successfully deleted"});
   } catch (error) {
     return res.status(500).send({ error: error.message });
   }
 };
 
-module.exports = {
-  createProduct,
-  getProduct,
-  getProductById,
-  updateProduct,
-  deleteProductById,
-};
+
+//__________________________________ Exports the module ___________________________________________//
+
+module.exports = {createProduct,getProduct,getProductById,updateProduct,deleteProductById};

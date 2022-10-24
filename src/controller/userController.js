@@ -14,7 +14,7 @@ const {
   isValidObjectId,
 } = require("../validator/validate");
 
-//_________________________create user_________________________//
+//__________________________________ create user _____________________________________________//
 
 const createUser = async function (req, res) {
   try {
@@ -56,10 +56,10 @@ const createUser = async function (req, res) {
         .send({ status: false, message: "Please provide fname" });
     }
     if (!isValidName(fname)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "fname is in incorrect format..." });
-      }
+      return res
+        .status(400)
+        .send({ status: false, message: "fname is in incorrect format..." });
+    }
 
     if (!lname) {
       return res
@@ -106,11 +106,11 @@ const createUser = async function (req, res) {
     if (!isValidPassword(password)) {
       return res.status(400).send({
         staus: false,
-        message: "Length of the password must be between 8 to 15 charaxters",
+        message: "Length of the password must be between 8 to 15 characters",
       });
     }
 
-    //______________________encrypted password_______________________//
+    // encrypted password:-
 
     const salt = await bcrypt.genSalt(10);
     const createPwd = await bcrypt.hash(password, salt);
@@ -226,9 +226,10 @@ const createUser = async function (req, res) {
     }
 
     requestBody.address = address;
+
     const createData = await userModel.create(requestBody);
-    return res.status(201).send({
-      status: true,
+    
+    return res.status(201).send({status: true,
       message: "User created successfully",
       data: createData,
     });
@@ -237,7 +238,9 @@ const createUser = async function (req, res) {
   }
 };
 
-//________________________user login________________________//
+
+//____________________________________ User login ________________________________________________//
+
 
 const userLogin = async function (req, res) {
   try {
@@ -275,17 +278,17 @@ const userLogin = async function (req, res) {
     }
 
     let findPassword = await userModel.findOne({ email: email });
+
+   // bcrypt.compare:- compare the password entered by user with the previously stored hased password .
     let passwordData = await bcrypt.compare(password, findPassword.password);
+    
     if (!passwordData) {
       return res
         .status(400)
         .send({ status: false, message: "Invalid credentials" });
     }
 
-    let userid = await userModel.findOne({
-      email: email,
-      password: findPassword.password,
-    });
+    let userid = await userModel.findOne({email: email,password: findPassword.password});
 
     // creating Token
     let token = jwt.sign(
@@ -310,7 +313,7 @@ const userLogin = async function (req, res) {
   }
 };
 
-//________________________get user deatils_______________________//
+//______________________________________ Get user deatils ___________________________________________//
 
 const getUserDetail = async function (req, res) {
   try {
@@ -326,26 +329,22 @@ const getUserDetail = async function (req, res) {
     const userByuserId = await userModel.findById(userIdFromParams);
 
     if (!userByuserId) {
-      return res
-        .status(404)
-        .send({ status: false, message: "user not found." });
+      return res.status(404).send({ status: false, message: "user not found." });
     }
 
+    //auhorization :-
     if (userIdFromToken != userIdFromParams) {
-      return res
-        .status(403)
-        .send({ status: false, message: "Unauthorized access." });
+      return res.status(403).send({ status: false, message: "Unauthorized access." });
     }
 
-    return res
-      .status(200)
-      .send({ status: true, message: "User details", data: userByuserId });
+    return res.status(200).send({ status: true, message: "User details", data: userByuserId });
+
   } catch (error) {
     return res.status(500).send({ status: false, message: error.message });
   }
 };
 
-//_____________________Update USER______________________//
+//________________________________________ Update USER ______________________________________________//
 
 const updateUser = async function (req, res) {
   try {
@@ -378,13 +377,14 @@ const updateUser = async function (req, res) {
         .send({ status: false, message: " user not found..." });
     }
 
+    // Authorization :-
     if (userId != req.userId) {
       return res
         .status(403)
         .send({ status: false, message: "unauthorised  user..." });
     }
 
-    // Destructuring
+    // Destructuring :-
     let { fname, lname, email, phone, password, address } = requestBody;
 
     // storing updates.
@@ -395,14 +395,18 @@ const updateUser = async function (req, res) {
         return res
           .status(400)
           .send({ status: false, message: "fname is in incorrect format..." });
-      updates.fname = fname;
-    }
+          
     if (!isValidName(fname))
       return res
         .status(400)
         .send({ status: false, message: "fname is in incorrect format..." });
 
+      updates.fname = fname;
+    }
+
+
     if (lname) {
+
       if (!isValid(lname))
         return res
           .status(400)
@@ -411,6 +415,7 @@ const updateUser = async function (req, res) {
         return res
           .status(400)
           .send({ status: false, message: "lname is in incorrect format..." });
+
       updates.lname = lname;
     }
 
@@ -568,5 +573,7 @@ const updateUser = async function (req, res) {
     return res.status(500).send({ status: false, message: error.message });
   }
 };
+
+
 
 module.exports = { createUser, userLogin, updateUser, getUserDetail };

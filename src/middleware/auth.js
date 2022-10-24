@@ -6,12 +6,12 @@ function isvalidObjectId(ObjectId) {
 }
 
 //---------------------------authentication---------------------------//
+
 exports.authentication = function (req, res, next) {
   try {
-    // const token = req.headers('Authorization');
-
     const token = req.headers["authorization"];
     //check if bearer is undefined
+    console.log(token)
     if (!token) {
       return res
         .status(401)
